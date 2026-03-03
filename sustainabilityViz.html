@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sustainability Is Indivisible</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0E1117; overflow-x: hidden; }
+  #root { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+const { useState, useEffect, createElement: h } = React;
+
+const COLORS = {
+  economic: { main: "#D4A039", light: "#F5DFA0", dark: "#8B6914" },
+  social: { main: "#C75B4A", light: "#F0B0A5", dark: "#8B2F1F" },
+  environmental: { main: "#3A8C6E", light: "#A0D9C0", dark: "#1F5C42" },
+  bg: "#0E1117",
+  text: "#E8E4DD",
+  muted: "#7A756D",
+};
+
+const dimensions = [
+  { id: "economic", label: "Economic", color: COLORS.economic, angle: -Math.PI / 2, desc: "Market forces, livelihoods, financial viability" },
+  { id: "social", label: "Social", color: COLORS.social, angle: -Math.PI / 2 + (2 * Math.PI) / 3, desc: "Equity, wellbeing, community, justice" },
+  { id: "environmental", label: "Environmental", color: COLORS.environmental, angle: -Math.PI / 2 + (4 * Math.PI) / 3, desc: "Ecosystems, climate, resources, biodiversity" },
+];
+
+function App() {
+  const [collapsed, setCollapsed] = useState(null);
+  const [hovering, setHovering] = useState(null);
+  const [phase, setPhase] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setPhase(p => p + 0.008), 16);
+    return () => clearInterval(t);
+  }, []);
+
+  const isCollapsed = collapsed !== null;
+  const cx = 300, cy = 260, ringR = 105, strokeW = 28;
+
+  const getOffset = (dim, i) => {
+    if (isCollapsed) {
+      if (dim.id === collapsed) return { x: 0, y: 0, opacity: 0, scale: 0 };
+      const t = Math.min(1, phase * 2);
+      return {
+        x: Math.cos(dim.angle) * 140 * t,
+        y: Math.sin(dim.angle) * 140 * t + 80 * t,
+        opacity: Math.max(0, 1 - t * 1.5),
+        scale: Math.max(0.3, 1 - t * 0.7),
+      };
+    }
+    const breathe = Math.sin(phase * 1.2 + i * 2.1) * 3;
+    return { x: Math.cos(dim.angle) * breathe, y: Math.sin(dim.angle) * breathe, opacity: 1, scale: 1 };
+  };
+
+  const renderRing = (dim, i) => {
+    const off = getOffset(dim, i);
+    const isHovered = hovering === dim.id;
+    const spread = 22;
+    const ox = Math.cos(dim.angle) * spread + off.x;
+    const oy = Math.sin(dim.angle) * spread + off.y;
+    return h("g", {
+      key: dim.id,
+      style: {
+        transition: isCollapsed ? "all 1.2s cubic-bezier(0.4,0,0.2,1)" : "all 0.3s ease",
+        opacity: off.opacity,
+        transform: `translate(${ox}px,${oy}px) scale(${off.scale})`,
+        transformOrigin: `${cx}px ${cy}px`,
+      }
+    },
+      h("circle", { cx, cy, r: ringR, fill: "none", stroke: dim.color.main, strokeWidth: strokeW, opacity: isHovered ? 0.95 : 0.7, style: { transition: "opacity 0.3s ease", filter: isHovered ? `drop-shadow(0 0 20px ${dim.color.main}88)` : "none" } }),
+      h("circle", { cx, cy, r: ringR, fill: "none", stroke: dim.color.light, strokeWidth: 2, opacity: 0.4 })
+    );
+  };
+
+  const renderLabel = (dim, i) => {
+    const off = getOffset(dim, i);
+    const labelR = ringR + 75;
+    const spread = 22;
+    const lx = cx + Math.cos(dim.angle) * (labelR + spread) + off.x;
+    const ly = cy + Math.sin(dim.angle) * (labelR + spread) + off.y;
+    return h("g", {
+      key: dim.id + "-label",
+      style: { opacity: off.opacity, transition: isCollapsed ? "all 1.2s cubic-bezier(0.4,0,0.2,1)" : "all 0.3s ease", cursor: "pointer" },
+      onMouseEnter: () => !isCollapsed && setHovering(dim.id),
+      onMouseLeave: () => setHovering(null),
+    },
+      h("text", { x: lx, y: ly, textAnchor: "middle", dominantBaseline: "central", fill: dim.color.main, fontFamily: "'DM Sans', sans-serif", fontWeight: "700", fontSize: "16", letterSpacing: "0.05em" }, dim.label.toUpperCase()),
+      h("text", { x: lx, y: ly + 20, textAnchor: "middle", dominantBaseline: "central", fill: COLORS.muted, fontFamily: "'DM Sans', sans-serif", fontSize: "11", fontWeight: "400" }, dim.desc)
+    );
+  };
+
+  const centerPulse = isCollapsed ? 0 : (Math.sin(phase * 1.5) * 0.15 + 0.85);
+  const centerR = isCollapsed ? 0 : 18 + Math.sin(phase * 1.5) * 3;
+
+  return h("div", {
+    style: { background: COLORS.bg, minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", color: COLORS.text, padding: "2rem", overflow: "hidden" }
+  },
+    // Title
+    h("div", { style: { textAlign: "center", marginBottom: "1.5rem", maxWidth: 620 } },
+      h("h1", { style: { fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: "clamp(1.6rem, 4vw, 2.4rem)", letterSpacing: "-0.02em", margin: "0 0 0.5rem 0", background: `linear-gradient(135deg, ${COLORS.environmental.main}, ${COLORS.economic.main}, ${COLORS.social.main})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" } }, "Sustainability Is Indivisible"),
+      h("p", { style: { color: COLORS.muted, fontSize: "0.95rem", margin: 0, lineHeight: 1.6 } }, "Not three pillars \u2014 one interdependent system. Remove any dimension and the others collapse.")
+    ),
+
+    // SVG
+    h("svg", { width: "600", height: "520", viewBox: "0 0 600 520", style: { maxWidth: "100%" } },
+      h("defs", null,
+        h("radialGradient", { id: "centerGlow" },
+          h("stop", { offset: "0%", stopColor: "#ffffff", stopOpacity: "0.25" }),
+          h("stop", { offset: "100%", stopColor: "#ffffff", stopOpacity: "0" })
+        )
+      ),
+      dimensions.map((d, i) => renderRing(d, i)),
+      !isCollapsed && h("circle", { cx, cy, r: centerR, fill: "url(#centerGlow)", opacity: centerPulse, style: { transition: "all 0.5s ease" } }),
+      !isCollapsed && h("text", { x: cx, y: cy + 1, textAnchor: "middle", dominantBaseline: "central", fill: COLORS.text, fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: "13", opacity: 0.8 }, "sustainable"),
+      dimensions.map((d, i) => renderLabel(d, i)),
+      isCollapsed && h("g", null,
+        h("text", { x: cx, y: cy - 10, textAnchor: "middle", dominantBaseline: "central", fill: COLORS.social.main, fontFamily: "'Playfair Display', serif", fontWeight: "700", fontSize: "20", opacity: Math.min(1, phase * 3) }, "System Collapse"),
+        h("text", { x: cx, y: cy + 18, textAnchor: "middle", dominantBaseline: "central", fill: COLORS.muted, fontFamily: "'DM Sans', sans-serif", fontSize: "12", opacity: Math.min(1, phase * 3) }, `Without ${dimensions.find(d => d.id === collapsed)?.label.toLowerCase()} sustainability,`),
+        h("text", { x: cx, y: cy + 36, textAnchor: "middle", dominantBaseline: "central", fill: COLORS.muted, fontFamily: "'DM Sans', sans-serif", fontSize: "12", opacity: Math.min(1, phase * 3) }, "the remaining dimensions cannot hold.")
+      )
+    ),
+
+    // Buttons
+    h("div", { style: { display: "flex", gap: "0.75rem", flexWrap: "wrap", justifyContent: "center", marginTop: "0.5rem" } },
+      !isCollapsed
+        ? dimensions.map(dim =>
+            h("button", {
+              key: dim.id,
+              onClick: () => { setCollapsed(dim.id); setPhase(0); },
+              onMouseEnter: () => setHovering(dim.id),
+              onMouseLeave: () => setHovering(null),
+              onMouseOver: (e) => { e.currentTarget.style.background = dim.color.main + "18"; e.currentTarget.style.borderColor = dim.color.main; },
+              onMouseOut: (e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = dim.color.main + "55"; },
+              style: { background: "transparent", border: `1.5px solid ${dim.color.main}55`, color: dim.color.main, padding: "0.5rem 1.1rem", borderRadius: "999px", fontFamily: "'DM Sans', sans-serif", fontSize: "0.8rem", fontWeight: 500, cursor: "pointer", letterSpacing: "0.04em", transition: "all 0.2s ease" }
+            }, `Remove ${dim.label}`)
+          )
+        : h("button", {
+            onClick: () => { setCollapsed(null); setPhase(0); },
+            onMouseOver: (e) => { e.currentTarget.style.background = COLORS.text + "20"; },
+            onMouseOut: (e) => { e.currentTarget.style.background = COLORS.text + "10"; },
+            style: { background: COLORS.text + "10", border: `1.5px solid ${COLORS.text}33`, color: COLORS.text, padding: "0.5rem 1.5rem", borderRadius: "999px", fontFamily: "'DM Sans', sans-serif", fontSize: "0.8rem", fontWeight: 500, cursor: "pointer", letterSpacing: "0.04em", transition: "all 0.2s ease" }
+          }, "\u21BA Restore System")
+    ),
+
+    // Bottom text
+    h("div", { style: { marginTop: "2rem", maxWidth: 520, textAlign: "center", padding: "1.25rem 1.5rem", background: COLORS.text + "06", borderRadius: "12px", border: `1px solid ${COLORS.text}0D` } },
+      h("p", { style: { color: COLORS.muted, fontSize: "0.82rem", lineHeight: 1.7, margin: 0 } },
+        'The \u201Cthree pillars\u201D model implies you can satisfy two out of three. But sustainability is a ',
+        h("em", { style: { color: COLORS.text, fontFamily: "'Playfair Display', serif" } }, "necessary conjunction"),
+        ' \u2014 if any dimension fails, the pressures it creates will undermine the others. Something that is \u201Cenvironmentally and socially sustainable but not economically\u201D was never truly sustainable at all.'
+      )
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+</script>
+</body>
+</html>
